@@ -1,0 +1,8 @@
+# Negar acesso direto ao config
+<Files "config.php">
+  Require all denied
+</Files>
+<Files ".htaccess">
+  Require all denied
+</Files>
+Options -Indexes
