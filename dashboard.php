@@ -25,6 +25,18 @@ try {
     <h1>Dashboard</h1>
     <a href="subdomain_form.php" class="btn btn-primary">+ Novo Sistema</a>
 </div>
+<div style="margin: 20px 0; padding: 15px; background: #f4f7f6; border-radius: 8px; border: 1px dashed #ccc;">
+    <h3 style="margin-top:0">🚀 Importação Rápida (CSV)</h3>
+    <form action="api/import_subdomains.php" method="POST" enctype="multipart/form-data">
+        <input type="hidden" name="csrf" value="<?= csrf_token() ?>">
+        <input type="file" name="csv_file" accept=".csv" required style="margin-bottom: 10px;">
+        <br>
+        <button type="submit" class="btn btn-secondary">Importar Lista</button>
+        <p style="font-size: 0.8em; color: #666; margin-top: 10px;">
+            Formato: <strong>nome, url, usuario, senha, observacao</strong>
+        </p>
+    </form>
+</div>
 
 <form method="get" class="filters" style="margin-bottom: 20px;">
     <input name="q" value="<?= htmlspecialchars($q) ?>" placeholder="Buscar sistemas...">
