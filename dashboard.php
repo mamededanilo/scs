@@ -2,14 +2,10 @@
 $pageTitle = 'Dashboard';
 require_once __DIR__ . '/includes/layout.php';
 
-// Filtros básicos
 $q = isset($_GET['q']) ? trim($_GET['q']) : '';
-$perPage = 10; 
 
 try {
     $db = db();
-    
-    // SQL Simples que funcionou no terminal
     $sql = "SELECT * FROM subdomains";
     if ($q !== '') {
         $sql .= " WHERE system_name ILIKE ? OR url ILIKE ? OR observation ILIKE ?";
@@ -18,7 +14,6 @@ try {
     } else {
         $st = $db->query($sql);
     }
-    
     $rows = $st->fetchAll(PDO::FETCH_ASSOC);
 } catch (Exception $e) {
     echo "Erro: " . $e->getMessage();
@@ -44,7 +39,7 @@ try {
             <th>Usuário</th>
             <th>Senha</th>
             <th>Status</th>
-            <th>Ações</th>
+            <th style="width: 120px;">Ações</th>
         </tr>
     </thead>
     <tbody>
@@ -81,6 +76,13 @@ try {
                     </td>
                     <td>
                         <a href="subdomain_form.php?id=<?= $r['id'] ?>" class="btn-link">Editar</a>
+                        
+                        <br> <form action="api/delete_subdomain.php" method="POST" onsubmit="return confirm('Tem certeza que deseja remover este sistema?');" style="display:inline;">
+                            <input type="hidden" name="id" value="<?= $r['id'] ?>">
+                            <button type="submit" class="btn-link danger" style="color: #dc3545; border: none; background: none; padding: 0; font-size: inherit; cursor: pointer; text-decoration: underline;">
+                                Remover
+                            </button>
+                        </form>
                     </td>
                 </tr>
             <?php endforeach; ?>
