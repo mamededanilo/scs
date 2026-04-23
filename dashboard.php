@@ -2,7 +2,6 @@
 $pageTitle = 'Dashboard';
 require_once __DIR__ . '/includes/layout.php';
 
-// Configurações de Paginação e Filtro
 $perPage = in_array((int)($_GET['per'] ?? 10), [10, 50, 100]) ? (int)$_GET['per'] : 10;
 $page    = max(1, (int)($_GET['page'] ?? 1));
 $q       = isset($_GET['q']) ? trim($_GET['q']) : '';
@@ -12,22 +11,22 @@ $where = "";
 $params = [];
 
 if ($q !== '') {
-    // Uso de aspas duplas para garantir compatibilidade com o schema do Postgres
-    $where = 'WHERE "system_name" ILIKE ? OR "url" ILIKE ? OR COALESCE("observation",\'\') ILIKE ?';
+    // Voltando para a sintaxe sem aspas que funcionou no seu psql
+    $where = "WHERE system_name ILIKE ? OR url ILIKE ? OR COALESCE(observation,'') ILIKE ?";
     $params = ["%$q%", "%$q%", "%$q%"];
 }
 
 try {
     $db = db();
     
-    // Contagem Total para Paginação
-    $stTotal = $db->prepare("SELECT COUNT(*) AS c FROM \"subdomains\" $where");
+    // Contagem Total
+    $stTotal = $db->prepare("SELECT COUNT(*) AS c FROM subdomains $where");
     $stTotal->execute($params);
     $resTotal = $stTotal->fetch(PDO::FETCH_ASSOC);
     $total = (int)($resTotal['c'] ?? 0);
 
-    // Consulta de todos os campos solicitados
-    $sql = "SELECT * FROM \"subdomains\" $where ORDER BY \"system_name\" ASC LIMIT $perPage OFFSET $offset";
+    // Consulta de todos os campos
+    $sql = "SELECT * FROM subdomains $where ORDER BY system_name ASC LIMIT $perPage OFFSET $offset";
     $st = $db->prepare($sql);
     $st->execute($params);
     $rows = $st->fetchAll(PDO::FETCH_ASSOC);
@@ -35,7 +34,7 @@ try {
     $pages = max(1, (int)ceil($total / $perPage));
 
 } catch (Exception $e) {
-    echo "<div class='alert alert-danger'>Erro no banco: " . htmlspecialchars($e->getMessage()) . "</div>";
+    echo "<div class='alert alert-danger'>Erro: " . htmlspecialchars($e->getMessage()) . "</div>";
     $rows = [];
     $pages = 1;
 }
@@ -49,7 +48,7 @@ try {
 </div>
 
 <form method="get" class="filters">
-    <input name="q" value="<?= htmlspecialchars($q) ?>" placeholder="Buscar por nome, URL, observação...">
+    <input name="q" value="<?= htmlspecialchars($q) ?>" placeholder="Buscar...">
     <select name="per" onchange="this.form.submit()">
         <?php foreach ([10, 50, 100] as $n): ?>
             <option value="<?= $n ?>" <?= $perPage == $n ? 'selected' : '' ?>><?= $n ?> por página</option>
@@ -71,21 +70,23 @@ try {
 </thead>
 <tbody>
 <?php if (empty($rows)): ?>
-    <tr><td colspan="6" class="empty">Nenhum registro encontrado.</td></tr>
+    <tr><td colspan="6" class="empty">Nenhum registro encontrado (Total no banco: <?= $total ?>)</td></tr>
 <?php else: ?>
     <?php foreach ($rows as $r): ?>
     <tr>
         <td>
-            <strong><?= htmlspecialchars($r['system_name']) ?></strong>
+            <strong><?= htmlspecialchars($r['system_name'] ?? '') ?></strong>
             <?php if (!empty($r['observation'])): ?>
-                <br><small style="color: #666;"><?= htmlspecialchars($r['observation']) ?></small>
+                <div style="font-size: 0.8em; color: #666; margin-top: 4px;">
+                    <?= htmlspecialchars($r['observation']) ?>
+                </div>
             <?php endif; ?>
         </td>
-        <td><a href="<?= htmlspecialchars($r['url']) ?>" target="_blank"><?= htmlspecialchars($r['url']) ?></a></td>
+        <td><a href="<?= htmlspecialchars($r['url'] ?? '') ?>" target="_blank"><?= htmlspecialchars($r['url'] ?? '') ?></a></td>
         <td><?= htmlspecialchars($r['username'] ?? '—') ?></td>
         <td>
             <?php if (!empty($r['password'])): ?>
-                <span class="pwd" title="Clique para ver (se implementado)">••••••</span>
+                <span class="pwd" style="cursor:help" title="<?= htmlspecialchars($r['password']) ?>">••••••</span>
             <?php else: ?>
                 —
             <?php endif; ?>
