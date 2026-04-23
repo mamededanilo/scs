@@ -78,9 +78,11 @@ try {
                         <a href="subdomain_form.php?id=<?= $r['id'] ?>" class="btn-link">Editar</a>
                         
                         <br> <form action="api/delete_subdomain.php" method="POST" onsubmit="return confirm('Tem certeza que deseja remover este sistema?');" style="display:inline;">
+                            <input type="hidden" name="csrf" value="<?= csrf_token() ?>">
+    
                             <input type="hidden" name="id" value="<?= $r['id'] ?>">
                             <button type="submit" class="btn-link danger" style="color: #dc3545; border: none; background: none; padding: 0; font-size: inherit; cursor: pointer; text-decoration: underline;">
-                                Remover
+                            Remover
                             </button>
                         </form>
                     </td>
