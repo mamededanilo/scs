@@ -1,42 +1,49 @@
 <?php
-require_once __DIR__ . '/../includes/layout.php'; // Ajuste o caminho conforme sua estrutura
+require_once __DIR__ . '/../includes/layout.php';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['csv_file'])) {
-    // Validação de CSRF
-    if ($_POST['csrf'] !== $_SESSION['csrf_token']) {
-        die("CSRF inválido");
+    // Validação de segurança CSRF
+    if (!isset($_POST['csrf']) || $_POST['csrf'] !== csrf_token()) {
+        die("Erro de segurança: CSRF inválido.");
     }
 
     $file = $_FILES['csv_file']['tmp_name'];
     $handle = fopen($file, "r");
     $db = db();
 
-    // Pular a primeira linha (cabeçalho) se houver
-    fgetcsv($handle, 1000, ",");
+    // Lê a primeira linha (cabeçalho) e detecta se o separador é vírgula ou ponto-e-vírgula
+    $header = fgetcsv($handle, 1000, ",");
+    if (count($header) < 2) { 
+        rewind($handle);
+        $header = fgetcsv($handle, 1000, ";");
+        $separator = ";";
+    } else {
+        $separator = ",";
+    }
 
-    $importados = 0;
+    $count = 0;
+    while (($data = fgetcsv($handle, 1000, $separator)) !== FALSE) {
+        if (empty($data[0])) continue; // Pula linhas vazias
 
-    while (($data = fgetcsv($handle, 1000, ",")) !== FALSE) {
-        // Mapeamento das colunas do CSV:
-        // $data[0] = nome, $data[1] = url, $data[2] = usuario, $data[3] = senha, $data[4] = observacao
         try {
-            $st = $db->prepare("INSERT INTO subdomains (system_name, url, username, password, observation, created_at, updated_at) 
-                                VALUES (?, ?, ?, ?, ?, NOW(), NOW())");
+            $st = $db->prepare("INSERT INTO subdomains 
+                (system_name, url, username, password, observation, last_ping_ok, created_at, updated_at) 
+                VALUES (?, ?, ?, ?, ?, false, NOW(), NOW())");
+            
             $st->execute([
-                $data[0], // system_name
-                $data[1], // url
-                $data[2], // username
-                $data[3], // password
-                $data[4]  // observation
+                $data[0] ?? '', // system_name
+                $data[1] ?? '', // url
+                $data[2] ?? '', // username
+                $data[3] ?? '', // password
+                $data[4] ?? ''  // observation
             ]);
-            $importados++;
+            $count++;
         } catch (Exception $e) {
-            // Opcional: logar erros de linhas específicas
-            continue;
+            continue; // Pula erros de inserção
         }
     }
 
     fclose($handle);
-    header("Location: ../dashboard.php?msg=Importados $importados sistemas com sucesso!");
+    header("Location: ../dashboard.php?msg=Sucesso: $count sistemas importados!");
     exit;
 }
